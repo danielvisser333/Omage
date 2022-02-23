@@ -1,3 +1,6 @@
+use omage_engine::Engine;
+
 fn main() {
-    println!("Hello, world!");
+    let engine = Engine::new("omage-bin");
+    engine.await_close_request();
 }

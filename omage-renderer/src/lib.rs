@@ -150,7 +150,7 @@ impl Drop for RenderBackend{
             self.device.destroy_device(None);
             self.surface_loader.destroy_surface(self.surface, None);
             self.instance.destroy_instance(None);
-            info!(self.logger, "Destroyed rendererer");
+            info!(self.logger, "Destroyed renderer");
         }
     }
 }

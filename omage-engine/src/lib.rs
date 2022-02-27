@@ -60,6 +60,7 @@ impl EngineBackend{
             Ok(window) => {info!(logger, "Created main window");window}
             Err(error) => {error!(logger, "Failed to create window, {}", error); panic!()}
         };
+        let window_size = main_window.inner_size();
         let renderer = Renderer::new(logger.clone(), path_manager, &main_window);
         return Self{
             logger,sender,receiver,main_window,renderer

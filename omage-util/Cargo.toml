@@ -6,13 +6,10 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-
-rayon = "1.5.1"
-slog = "2.7.0"
-slog-term = "2.8.1"
-slog-async = "2.7.0"
 directories = "4.0.1"
-chrono = "0.4.19"
+slog = "2.7.0"
+slog-term = "2.9.0"
+slog-async = "2.7.0"
 serde = "1.0.136"
-serde_derive = "1.0.136"
 toml = "0.5.8"
+chrono = "0.4.19"

@@ -1,6 +1,7 @@
-use omage_engine::Engine;
+use omage::Engine;
 
-fn main() {
+fn main(){
     let engine = Engine::new("omage-bin");
-    engine.await_close_request();
+    engine.set_window_name(String::from("omage"));
+    engine.dispatch();
 }

@@ -1,8 +1,8 @@
 [workspace]
 
 members = [
-	"omage-bin",
-	"omage-engine",
-	"omage-renderer",
-	"omage-util",
+    "omage",
+    "omage-bin",
+    "omage-renderer",
+    "omage-util"
 ]

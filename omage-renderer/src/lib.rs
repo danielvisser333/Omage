@@ -4,6 +4,7 @@ use ash::vk::{SurfaceKHR, SwapchainKHR};
 use crossbeam_channel::{Receiver, Sender};
 use slog::{info, Logger};
 use omage_util::{FileType, PathManager};
+use crate::allocator::Allocator;
 use crate::functions::swapchain::SwapchainInfo;
 use crate::instance::{RenderConfig, RenderInstance};
 
@@ -47,6 +48,7 @@ pub struct RenderThread{
     device : Device,
     swapchain_loader : Swapchain,
     swapchain : SwapchainKHR,
+    allocator : Allocator,
 }
 impl RenderThread{
     pub unsafe fn new(instance : RenderInstance, path_manager : PathManager, sender : Sender<RenderResult>, receiver : Receiver<RenderTask>) -> Self{
@@ -63,9 +65,10 @@ impl RenderThread{
         let swapchain_loader = Swapchain::new(&instance, &device);
         let swapchain_info = SwapchainInfo::new(&logger, &instance, &surface_loader, surface, physical_device, false);
         let swapchain = functions::swapchain::create_swapchain(&logger, &swapchain_loader, &swapchain_info, surface);
+        let allocator = Allocator::new(&logger, &instance, physical_device, &device);
         info!(logger, "[thread#{}]Successfully created the main renderer.", rayon::current_thread_index().unwrap());
         return Self{
-            logger,config,surface,surface_loader,_entry:entry,instance,path_manager,sender,receiver,device,swapchain_loader,swapchain,
+            logger,config,surface,surface_loader,_entry:entry,instance,path_manager,sender,receiver,device,swapchain_loader,swapchain,allocator,
         }
     }
     pub unsafe fn listen(mut self){
@@ -94,6 +97,7 @@ impl Drop for RenderThread{
 
         unsafe {
             self.destroy_swapchain();
+            self.allocator.destroy();
             self.device.destroy_device(None);
             self.surface_loader.destroy_surface(self.surface, None);
             self.instance.destroy_instance(None);

@@ -17,4 +17,7 @@ impl Allocator{
             logger : logger.clone(),
         }
     }
+    pub unsafe fn destroy(&mut self){
+
+    }
 }

@@ -6,6 +6,7 @@ use ash::{Device, Instance};
 use ash::vk::{Handle, MemoryPropertyFlags, PhysicalDevice, PhysicalDeviceMemoryProperties};
 use slog::{crit, info, Logger};
 use crate::allocator::block::Block;
+use crate::allocator::region::Region;
 
 const MIN_BLOCK_SIZE : u64 = 32_000_000;
 
@@ -52,5 +53,19 @@ impl Allocator{
         }
         crit!(self.logger, "[thread#{}]Memory requested that does not exist.", rayon::current_thread_index().unwrap());
         panic!();
+    }
+    unsafe fn try_fit_in_block(&mut self, size : u64, block : u64, alignment : u64) -> Option<u64>{
+        let mut regions = self.blocks[block as usize].regions.clone();
+        regions.sort_unstable_by_key(|region| region.offset);
+        for i in 0..regions.len(){
+            if i == 0 && regions[i].offset >= size{
+                self.blocks[block as usize].regions.push(Region{offset:0, size});
+            }
+            if i != regions.len(){
+
+            }
+            todo!();
+        }
+        return None;
     }
 }

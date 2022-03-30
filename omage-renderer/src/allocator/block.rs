@@ -1,11 +1,13 @@
 use ash::Device;
-use ash::vk::{DeviceMemory, MemoryAllocateInfo, PhysicalDeviceMemoryProperties, StructureType};
+use ash::vk::{DeviceMemory, MemoryAllocateInfo, StructureType};
 use slog::{Logger, warn};
+use crate::allocator::region::Region;
 
 pub struct Block{
     pub memory : DeviceMemory,
-    size : u64,
-    memory_type : u32,
+    pub size : u64,
+    pub memory_type : u32,
+    pub regions : Vec<Region>,
 }
 impl Block{
     pub unsafe fn new(logger : &Logger, device : &Device, size : u64, memory_type : u32) -> Option<Self>{
@@ -26,6 +28,7 @@ impl Block{
             memory_type,
             memory,
             size,
+            regions : vec![],
         });
     }
 }

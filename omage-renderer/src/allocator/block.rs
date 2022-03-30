@@ -37,8 +37,9 @@ impl Block{
     }
 }
 impl Allocator{
-    pub unsafe fn destroy_block(&self, block_id : u64){
+    pub unsafe fn destroy_block(&mut self, block_id : u64){
         self.device.free_memory(self.blocks[self.blocks.iter().position(|block| block.memory.as_raw() == block_id).unwrap()].memory, None);
+        self.blocks.remove(self.blocks.iter().position(|block| block.memory.as_raw() == block_id).unwrap());
     }
     pub unsafe fn create_block(&mut self, size : u64, memory_type_filter : u32, memory_property_flags : MemoryPropertyFlags) -> u64{
         for memory_type in self.get_compatible_memory_types(memory_type_filter, memory_property_flags){

@@ -27,7 +27,7 @@ impl Allocator{
     }
     pub unsafe fn destroy(&mut self){
         info!(self.logger, "[thread#{}]Destroying the Vulkan memory allocator.", rayon::current_thread_index().unwrap());
-        for block in self.blocks.iter(){self.destroy_block(block.memory.as_raw())}
+        for i in 0..self.blocks.len(){self.destroy_block(self.blocks[i].memory.as_raw())}
         self.blocks=vec!();
     }
     fn get_compatible_memory_types(&self, filter : u32, flags : MemoryPropertyFlags) -> Vec<u32>{

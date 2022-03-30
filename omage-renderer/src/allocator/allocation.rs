@@ -31,6 +31,9 @@ impl Allocator{
         let block_id = self.blocks.iter().position(|block| block.memory.as_raw() == allocation.block).unwrap();
         let index = self.blocks[block_id].regions.iter().position(|region| region.offset == allocation.region).unwrap();
         self.blocks[block_id].regions.remove(index);
+        if self.blocks[block_id].regions.len() == 0{
+            self.destroy_block(allocation.block);
+        }
     }
     pub unsafe fn allocate_image_memory(&mut self, image : Image, flags : MemoryPropertyFlags) -> Allocation{
         let memory_requirements = self.device.get_image_memory_requirements(image);

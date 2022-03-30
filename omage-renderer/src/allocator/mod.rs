@@ -1,18 +1,17 @@
 pub mod block;
 pub mod region;
+pub mod allocation;
 
-use std::cmp::max;
 use ash::{Device, Instance};
 use ash::vk::{Handle, MemoryPropertyFlags, PhysicalDevice, PhysicalDeviceMemoryProperties};
-use slog::{crit, info, Logger};
+use slog::{info, Logger};
 use crate::allocator::block::Block;
-use crate::allocator::region::Region;
 
 const MIN_BLOCK_SIZE : u64 = 32_000_000;
 
 pub struct Allocator{
     logger : Logger,
-    device : Device,
+    pub device : Device,
     memory_properties : PhysicalDeviceMemoryProperties,
     blocks : Vec<Block>,
 }
@@ -34,55 +33,8 @@ impl Allocator{
     fn get_compatible_memory_types(&self, filter : u32, flags : MemoryPropertyFlags) -> Vec<u32>{
         let mut compatible_types = vec!();
         for (i, memory_type) in self.memory_properties.memory_types.iter().enumerate(){
-            if memory_type.property_flags.contains(flags) && (filter & (1 << i)) > 0{compatible_types.push(i as u32)}
+            if memory_type.property_flags.contains(flags) && (filter & (1 << i as u32)) > 0{compatible_types.push(i as u32)}
         }
         return compatible_types;
-    }
-    unsafe fn destroy_block(&self, block_id : u64){
-        self.device.free_memory(self.blocks[self.blocks.iter().position(|block| block.memory.as_raw() == block_id).unwrap()].memory, None);
-    }
-    unsafe fn create_block(&mut self, size : u64, memory_type_filter : u32, memory_property_flags : MemoryPropertyFlags) -> u64{
-        for memory_type in self.get_compatible_memory_types(memory_type_filter, memory_property_flags){
-            let block = Block::new(&self.logger, &self.device, max(MIN_BLOCK_SIZE, size), memory_type);
-            if block.is_some(){
-                let block = block.unwrap();
-                let block_id = block.memory.as_raw();
-                self.blocks.push(block);
-                return block_id;
-            }
-        }
-        crit!(self.logger, "[thread#{}]Memory requested that does not exist.", rayon::current_thread_index().unwrap());
-        panic!();
-    }
-    unsafe fn try_fit_in_block(&mut self, size : u64, block : u64, alignment : u64) -> Option<u64>{
-        let mut regions = self.blocks[block as usize].regions.clone();
-        regions.sort_unstable_by_key(|region| region.offset);
-        if regions.len() == 0 && size <= self.blocks[block as usize].size{
-            self.blocks[block as usize].regions.push(Region{offset:0, size});
-            return Some(0);
-        }
-        for i in 0..regions.len(){
-            if i == 0 && regions[i].offset >= size{
-                self.blocks[block as usize].regions.push(Region{offset:0, size});
-                return Some(0);
-            }
-            if i != regions.len() - 1 && i != 0{
-                let start_alignment = regions[i - 1].offset + regions[i - 1].size;
-                let offset = start_alignment + alignment - (start_alignment % alignment);
-                if regions[i].offset >= offset + size{
-                    self.blocks[block as usize].regions.push(Region{offset,size});
-                    return Some(offset);
-                }
-            }
-            if i == regions.len() - 1{
-                let start_alignment = regions[i].offset + regions[i].size;
-                let offset = start_alignment + alignment - (start_alignment % alignment);
-                if self.blocks[block as usize].size >= offset + size{
-                    self.blocks[block as usize].regions.push(Region{offset,size});
-                    return Some(offset);
-                }
-            }
-        }
-        return None;
     }
 }

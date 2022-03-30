@@ -15,12 +15,12 @@ pub const DEPTH_ONLY_FORMATS : [Format; 2] = [
 ];
 
 pub struct SwapchainInfo{
-    extent : Extent2D,
+    pub extent : Extent2D,
     present_mode : PresentModeKHR,
     transform : SurfaceTransformFlagsKHR,
-    format : Format,
+    pub format : Format,
     color_space : ColorSpaceKHR,
-    depth_format : Format,
+    pub depth_format : Format,
     min_image_count : u32,
 }
 impl SwapchainInfo{

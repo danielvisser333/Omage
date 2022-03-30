@@ -1,7 +1,8 @@
 use ash::{Device, Entry, Instance};
 use ash::extensions::khr::{Surface, Swapchain};
-use ash::vk::{SurfaceKHR, SwapchainKHR};
+use ash::vk::{SurfaceKHR, SwapchainKHR, ImageView};
 use crossbeam_channel::{Receiver, Sender};
+use objects::image::AllocatedImageView;
 use slog::{info, Logger};
 use omage_util::{FileType, PathManager};
 use crate::allocator::Allocator;
@@ -11,6 +12,7 @@ use crate::instance::{RenderConfig, RenderInstance};
 pub mod instance;
 mod functions;
 mod allocator;
+pub mod objects;
 
 
 pub struct Renderer{
@@ -49,6 +51,8 @@ pub struct RenderThread{
     swapchain_loader : Swapchain,
     swapchain : SwapchainKHR,
     allocator : Allocator,
+    swapchain_image_views : Vec<ImageView>,
+    depth_image : AllocatedImageView,
 }
 impl RenderThread{
     pub unsafe fn new(instance : RenderInstance, path_manager : PathManager, sender : Sender<RenderResult>, receiver : Receiver<RenderTask>) -> Self{
@@ -65,10 +69,13 @@ impl RenderThread{
         let swapchain_loader = Swapchain::new(&instance, &device);
         let swapchain_info = SwapchainInfo::new(&logger, &instance, &surface_loader, surface, physical_device, false);
         let swapchain = functions::swapchain::create_swapchain(&logger, &swapchain_loader, &swapchain_info, surface);
-        let allocator = Allocator::new(&logger, &instance, physical_device, &device);
+        let swapchain_images = swapchain_loader.get_swapchain_images(swapchain).unwrap();
+        let swapchain_image_views = objects::image::create_swapchain_image_views(&device, swapchain_info.format, &swapchain_images);
+        let mut allocator = Allocator::new(&logger, &instance, physical_device, &device);
+        let depth_image = objects::image::AllocatedImageView::new_depth(&logger, &mut allocator, swapchain_info.extent, swapchain_info.depth_format);
         info!(logger, "[thread#{}]Successfully created the main renderer.", rayon::current_thread_index().unwrap());
         return Self{
-            logger,config,surface,surface_loader,_entry:entry,instance,path_manager,sender,receiver,device,swapchain_loader,swapchain,allocator,
+            logger,config,surface,surface_loader,_entry:entry,instance,path_manager,sender,receiver,device,swapchain_loader,swapchain,allocator,swapchain_image_views,depth_image,
         }
     }
     pub unsafe fn listen(mut self){
@@ -85,7 +92,12 @@ impl RenderThread{
     pub fn draw(&mut self){
 
     }
-    unsafe fn destroy_swapchain(&self){
+    unsafe fn destroy_swapchain(&mut self){
+        self.depth_image.destroy(&mut self.allocator);
+        for &swapchain_image_view in self.swapchain_image_views.iter(){
+            self.device.destroy_image_view(swapchain_image_view, None);
+        }
+        self.swapchain_image_views=vec!();
         self.swapchain_loader.destroy_swapchain(self.swapchain, None);
     }
 }

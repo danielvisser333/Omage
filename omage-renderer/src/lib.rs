@@ -1,6 +1,6 @@
 use ash::{Device, Entry, Instance};
 use ash::extensions::khr::{Surface, Swapchain};
-use ash::vk::{SurfaceKHR, SwapchainKHR, ImageView};
+use ash::vk::{SurfaceKHR, SwapchainKHR, ImageView, RenderPass, Framebuffer};
 use crossbeam_channel::{Receiver, Sender};
 use objects::image::AllocatedImageView;
 use slog::{info, Logger};
@@ -53,6 +53,8 @@ pub struct RenderThread{
     allocator : Allocator,
     swapchain_image_views : Vec<ImageView>,
     depth_image : AllocatedImageView,
+    render_pass : RenderPass,
+    framebuffers : Vec<Framebuffer>,
 }
 impl RenderThread{
     pub unsafe fn new(instance : RenderInstance, path_manager : PathManager, sender : Sender<RenderResult>, receiver : Receiver<RenderTask>) -> Self{
@@ -73,9 +75,11 @@ impl RenderThread{
         let swapchain_image_views = objects::image::create_swapchain_image_views(&device, swapchain_info.format, &swapchain_images);
         let mut allocator = Allocator::new(&logger, &instance, physical_device, &device);
         let depth_image = objects::image::AllocatedImageView::new_depth(&logger, &mut allocator, swapchain_info.extent, swapchain_info.depth_format);
+        let render_pass = functions::render_pass::create_render_pass(&logger, &device, swapchain_info.format, swapchain_info.depth_format);
+        let framebuffers = functions::framebuffer::create_framebuffers(&logger, &device, render_pass, &swapchain_image_views, depth_image.view, swapchain_info.extent);
         info!(logger, "[thread#{}]Successfully created the main renderer.", rayon::current_thread_index().unwrap());
         return Self{
-            logger,config,surface,surface_loader,_entry:entry,instance,path_manager,sender,receiver,device,swapchain_loader,swapchain,allocator,swapchain_image_views,depth_image,
+            logger,config,surface,surface_loader,_entry:entry,instance,path_manager,sender,receiver,device,swapchain_loader,swapchain,allocator,swapchain_image_views,depth_image,render_pass,framebuffers,
         }
     }
     pub unsafe fn listen(mut self){
@@ -93,6 +97,9 @@ impl RenderThread{
 
     }
     unsafe fn destroy_swapchain(&mut self){
+        for &framebuffer in self.framebuffers.iter(){
+            self.device.destroy_framebuffer(framebuffer, None);
+        }
         self.depth_image.destroy(&mut self.allocator);
         for &swapchain_image_view in self.swapchain_image_views.iter(){
             self.device.destroy_image_view(swapchain_image_view, None);
@@ -110,6 +117,7 @@ impl Drop for RenderThread{
         unsafe {
             self.destroy_swapchain();
             self.allocator.destroy();
+            self.device.destroy_render_pass(self.render_pass, None);
             self.device.destroy_device(None);
             self.surface_loader.destroy_surface(self.surface, None);
             self.instance.destroy_instance(None);

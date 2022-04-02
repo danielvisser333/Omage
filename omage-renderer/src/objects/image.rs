@@ -79,6 +79,9 @@ impl AllocatedImageView{
     pub unsafe fn new_depth(logger : &Logger, allocator : &mut Allocator, extent : Extent2D, format : Format) -> Self{
         return Self::new_2d(logger, allocator, extent, format, MemoryPropertyFlags::DEVICE_LOCAL, ImageUsageFlags::DEPTH_STENCIL_ATTACHMENT, ImageAspectFlags::DEPTH);
     }
+    pub unsafe fn new_font(logger : &Logger, allocator : &mut Allocator) -> Self{
+        todo!();
+    }
 }
 pub unsafe fn create_swapchain_image_views(device : &Device, format : Format, images : &Vec<Image>) -> Vec<ImageView>{
     let mut views = vec!();

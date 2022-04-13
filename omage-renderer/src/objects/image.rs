@@ -1,5 +1,6 @@
 use ash::{vk::{Image, StructureType, ImageCreateFlags, ImageCreateInfo, SharingMode, ImageUsageFlags, ImageTiling, Extent2D, Format, Extent3D, ImageType, ImageLayout, SampleCountFlags, MemoryPropertyFlags, ImageView, ImageViewCreateInfo, ImageViewCreateFlags, ComponentMapping, ComponentSwizzle, ImageViewType, ImageSubresourceRange, ImageAspectFlags}, Device};
 use slog::{Logger, crit};
+use omage_util::PathManager;
 
 use crate::allocator::{allocation::Allocation, Allocator};
 
@@ -79,7 +80,7 @@ impl AllocatedImageView{
     pub unsafe fn new_depth(logger : &Logger, allocator : &mut Allocator, extent : Extent2D, format : Format) -> Self{
         return Self::new_2d(logger, allocator, extent, format, MemoryPropertyFlags::DEVICE_LOCAL, ImageUsageFlags::DEPTH_STENCIL_ATTACHMENT, ImageAspectFlags::DEPTH);
     }
-    pub unsafe fn new_font(logger : &Logger, allocator : &mut Allocator) -> Self{
+    pub unsafe fn new_font(logger : &Logger, allocator : &mut Allocator, path_manager : PathManager) -> Self{
         todo!();
     }
 }
